@@ -1,0 +1,43 @@
+{
+    "env": {
+        "z88dk": "${env:ZCCCFG}/../..",
+        "z88dk_compiler": "clang",
+        "z88dk_include": "${z88dk}/include"
+    },
+    "configurations": [
+        {
+            "name": "z88dk",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${z88dk_include}/_DEVELOPMENT/common"
+                // "${z88dk_include}/arch"
+            ],
+            "forcedInclude": [
+                // "${z88dk_include}/sys/compiler.h",
+                // "${z88dk}/libsrc/_DEVELOPMENT/target/zxn/config_zxn.h"
+            ],
+            // "cStandard": "c11",
+            "defines": [
+                // List of defines equal to the ones produced by zcc -v -c but for __INTELLISENSE__ and __SDCC
+                "DEBUG",
+                "__INTELLISENSE__",
+                "__ZXNEXT",
+                "__Z80",
+                "__Z80__",
+                "__Z80N",
+                "__SDCC_IY",
+                "__Z88DK_NEWLIB",
+                "__Z88DK",
+                "__z88dk_callee=",
+                "__z88dk_fastcall=",
+                "__naked=",
+                "__banked=",
+                "__critical=",
+                "__z88dk_params_offset(x)="
+                // "__SDCC"   
+            ],
+            "mergeConfigurations": true
+        }
+    ],
+    "version": 4
+}

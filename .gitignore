@@ -1,0 +1,5 @@
+build
+cspect_win.dat
+*.o
+*.sym
+.DS_Store
