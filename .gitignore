@@ -1,5 +1,7 @@
-build
-cspect_win.dat
-*.o
-*.sym
+build/
+cases/*/*.o
+cases/*/*.lis
+cases/*/*.map
+cases/*/*.sym
 .DS_Store
+cspect_win.dat
