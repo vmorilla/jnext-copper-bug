@@ -13,6 +13,10 @@ Switching the bank *between* lines works correctly, which is what makes this
 specific: the copper is running, the register reaches Layer 2, and the change
 takes effect at the right raster line. Only its horizontal position is lost.
 
+<img src="mame-vs-jnext.png" width="760" alt="Side by side: MAME draws each line of the lower band green on the left eighth then red; jnext draws the whole band solid green">
+
+Both captures cropped to the 256x192 display area and shown at the same scale.
+
 ## What the test program does
 
 [main.c](main.c) paints two Layer 2 screens, each three 16K banks, in flat
