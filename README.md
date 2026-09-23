@@ -3,7 +3,7 @@
 Minimal ZX Spectrum Next programs that exercise the copper, each isolating one
 rendering behaviour in [jnext](https://github.com/jorgegv/jnext).
 
-| case | what it shows | status on jnext 0.99.155 |
+| case | what it shows | status on jnext 0.99.157 |
 | ---- | ------------- | ------------------------ |
 | [layer2-bank-midline](cases/layer2-bank-midline/) | a copper `MOVE` to the Layer 2 bank (nextreg `0x12`) part-way along a scanline is applied to the whole line | **reproduces** |
 | [tilemap-transparency](cases/tilemap-transparency/) | a copper `MOVE` to the tilemap transparency index (nextreg `0x4C`) was not honoured mid-frame | **fixed** — kept as a regression case |
@@ -31,8 +31,20 @@ with `cmp`.
 MAME on it. It expects the image at `~/bin/next-images/cspect-next-2gb.img`
 plus `mtools` and [`txt2bas`](https://github.com/remy/txt2bas); adjust the
 variables at the top of the [Makefile](Makefile). Note that MAME has to boot
-NextZXOS and load through `.nexload`, so it is slow — slow enough that the
-reference capture for the newer case has not been taken this way.
+NextZXOS and load through `.nexload`, so it is slow.
+
+The `mame.png` in each case directory is the hardware reference. Both were
+taken by running MAME under a small Lua autoboot script that snapshots after a
+fixed number of emulated frames, rather than by pressing F12, so the capture
+does not depend on when a key was hit:
+
+```sh
+mame -snapsize 1440x1080 -nounevenstretch -video bgfx \
+     -bgfx_screen_chains unfiltered -window -skip_gameinfo \
+     -snapshot_directory snap -snapname 'boot%i' \
+     -autoboot_script shots.lua \
+     tbblue -hard1 ~/bin/next-images/cspect-next-2gb.img
+```
 
 ## Adding a case
 

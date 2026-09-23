@@ -1,12 +1,13 @@
 # jnext bug: a copper MOVE part-way along a scanline is applied to the whole line
 
-**Status: reproduces on jnext 0.99.155.**
+**Status: reproduces on jnext 0.99.157** (and unchanged since 0.99.155 — the
+`make shot` capture is byte-identical on both).
 
 A copper `MOVE` to the Layer 2 active bank register (nextreg `0x12`) that lands
 part-way along a scanline is not honoured at the point it is written. The whole
 scanline is drawn with the **last** value written on it, so the pixels to the
-left of the second `MOVE` — which should come from the first bank — come from
-the second one instead.
+right of that `MOVE` — which should come from the bank it selects — come from
+the bank selected by the following write instead.
 
 Switching the bank *between* lines works correctly, which is what makes this
 specific: the copper is running, the register reaches Layer 2, and the change
@@ -22,18 +23,47 @@ and the default Layer 2 palette is `RRRGGGBB`, so no palette setup is needed.
 The copper list then runs once per frame, restarted at each vertical blank
 (nextreg `0x62` = `0xC0`):
 
-| lines | copper writes | expected |
-| ----- | ------------- | -------- |
-| 0     | `0x12` = 8 once | lines 0–47 solid **red** — the control |
-| 48–191 | per line: `0x12` = 8 at hpos 8, `0x12` = 11 at hpos 32 | each line **red** from hpos 8 to hpos 32, then **green** |
+| lines | copper writes |
+| ----- | ------------- |
+| 0     | `0x12` = 8 once |
+| 48–191 | per line: `0x12` = 8 at hpos 8, `0x12` = 11 at hpos 32 |
 
-The control band is the part that matters for reading the result: it uses the
-same register, written by the same copper, and it comes out right.
+The control band (lines 0–47) is the part that makes the result readable: it
+uses the same register, written by the same copper, and it comes out right.
 
-## Expected result
+### A note on the geometry
 
-Three regions: a red band at the top, then a band whose left part is red and
-whose right part is green, repeated on every line.
+`hpos 32` lands at x ≈ 256 — that is, at or just past the **right edge** of the
+256-pixel display. On hardware it therefore has no visible effect on the line it
+is issued on; all it does is leave bank 11 selected for the start of the next
+line. So each line of the test band is really *two* regions, not three:
+
+* x = 0 … ≈ 64 — bank 11 (**green**), left over from the previous line
+* x ≈ 64 … 255 — bank 8 (**red**), from the `MOVE` at hpos 8
+
+That is what the MAME capture below shows, and it is enough to demonstrate the
+bug. The geometry can be moved if a three-region version is wanted — see the
+bottom of this file.
+
+## Expected result — [mame.png](mame.png), captured from MAME
+
+<img src="mame.png" width="480" alt="MAME: a red band at the top, then every line green on the left eighth and red for the rest">
+
+MAME renders the mid-line `MOVE` where it is issued:
+
+```
+display area x = 193..1215, y = 110..970  (256x192 at ~4x)
+
+y=200  (control band)   RED across the whole line              <- line ~20
+y=600  (switched band)  GREEN x=193..459, RED x=460..1215      <- line ~109
+y=900  (switched band)  GREEN x=193..459, RED x=460..1215      <- line ~176
+```
+
+The green/red boundary sits at x = 460, i.e. display pixel
+(460 − 193) / 3.996 ≈ **67**, which is where the copper's `hpos 8` falls: a
+`WAIT(line, h=0)` + `MOVE` completes at the start of the 256-wide display, so
+`h=8` is 8 × 8 = 64 pixels into it. The band boundary is at y = 331 ≈ line 48,
+matching `SPLIT_LINE`.
 
 ## Actual result in jnext — [jnext.png](jnext.png)
 
@@ -48,7 +78,7 @@ Scanline sample from the capture (`make shot`, 640×512, 2× scale):
 
 ```
 y=153  (control band)   black×64  RED  ×512  black×64      <- correct
-y=230  (switched band)  black×64  GREEN×512  black×64      <- should be RED then GREEN
+y=230  (switched band)  black×64  GREEN×512  black×64      <- should be GREEN then RED
 ```
 
 ## Where it comes from
@@ -92,6 +122,13 @@ so the same limitation should apply to a mid-line scroll change.
 Fixing it means carrying the horizontal position into the log and having
 `render_scanline` draw the line in segments rather than in one piece.
 
+This is the limitation documented as a bounded one in
+`doc/design/EMULATOR-DESIGN-PLAN.md` §6 and in
+`doc/design/PER-SCANLINE-DISPLAY-STATE-AUDIT.md` (jnext GH #170). What this case
+adds is that the residual error is **not** bounded to "at most one row, always
+early": when two writes land on the same line, the first is lost outright and a
+whole horizontal region of the screen is drawn from the wrong bank.
+
 ## Why it matters
 
 It is not a corner case. This is how the Next's copper is normally used to put
@@ -122,8 +159,9 @@ make CASE=layer2-bank-midline shot     # deterministic headless PNG
 make CASE=layer2-bank-midline mame     # run it in MAME (needs an SD image)
 ```
 
-The geometry can be moved for further testing:
+The geometry can be moved for further testing — this puts both switches inside
+the visible line, so hardware shows three regions rather than two:
 
 ```sh
-make clean && make EXTRA_FLAGS="-DSPLIT_LINE=96 -DSWITCH_ON=4 -DSWITCH_OFF=48"
+make clean && make EXTRA_FLAGS="-DSPLIT_LINE=96 -DSWITCH_ON=4 -DSWITCH_OFF=20"
 ```
