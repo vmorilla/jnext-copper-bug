@@ -1,7 +1,9 @@
 # jnext bug: a copper MOVE part-way along a scanline is applied to the whole line
 
-**Status: reproduces on jnext 0.99.157** (and unchanged since 0.99.155 — the
-`make shot` capture is byte-identical on both).
+> **Status: FIXED** in jnext 1.0.30 (GH #270): the switched band now comes out
+> green then red, as on hardware. The case is kept as a regression test; the
+> description that follows is of the original failure, first seen on 0.99.155
+> and still present on 0.99.157.
 
 A copper `MOVE` to the Layer 2 active bank register (nextreg `0x12`) that lands
 part-way along a scanline is not honoured at the point it is written. The whole

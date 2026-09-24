@@ -3,9 +3,10 @@
 Minimal ZX Spectrum Next programs that exercise the copper, each isolating one
 rendering behaviour in [jnext](https://github.com/jorgegv/jnext).
 
-| case | what it shows | status on jnext 0.99.157 |
-| ---- | ------------- | ------------------------ |
-| [layer2-bank-midline](cases/layer2-bank-midline/) | a copper `MOVE` to the Layer 2 bank (nextreg `0x12`) part-way along a scanline is applied to the whole line | **reproduces** |
+| case | what it shows | status on jnext 1.0.30 |
+| ---- | ------------- | --------------------- |
+| [tilemap-split-hblank](cases/tilemap-split-hblank/) | copper `MOVE`s to `0x6F`/`0x4C`/`0x6B` issued just past a line boundary are split between two rows depending on CPU timing, giving flickering lines | **reproduces** |
+| [layer2-bank-midline](cases/layer2-bank-midline/) | a copper `MOVE` to the Layer 2 bank (nextreg `0x12`) part-way along a scanline is applied to the whole line | **fixed** — kept as a regression case |
 | [tilemap-transparency](cases/tilemap-transparency/) | a copper `MOVE` to the tilemap transparency index (nextreg `0x4C`) was not honoured mid-frame | **fixed** — kept as a regression case |
 
 Each case directory has its own README with the expected and actual output.
@@ -19,6 +20,7 @@ make list                        # the cases, and which one CASE defaults to
 make CASE=<name>                 # build build/<name>.nex
 make CASE=<name> jnext           # run it
 make CASE=<name> shot            # deterministic headless PNG into build/
+make CASE=<name> frames          # one headless PNG per frame, for flicker
 make clean
 ```
 

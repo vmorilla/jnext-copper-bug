@@ -4,12 +4,13 @@
 #   make CASE=<name>              build build/<name>.nex
 #   make CASE=<name> jnext        build and run it in jnext
 #   make CASE=<name> shot         build and save a headless jnext screenshot
+#   make CASE=<name> frames       one headless screenshot per frame, for flicker
 #   make CASE=<name> mame         build, copy to the SD image and run in MAME
 #   make clean                    remove build artefacts
 #
 # CASE defaults to the case the repository is currently reporting.
 
-CASE ?= layer2-bank-midline
+CASE ?= tilemap-split-hblank
 CASEDIR := cases/$(CASE)
 
 CC     := zcc
@@ -84,6 +85,24 @@ shot: $(OUT)
 		$(OUT)
 	@echo "wrote $(OUTDIR)/$(CASE)-jnext.png"
 
+# One screenshot per frame, FRAMES_FIRST .. FRAMES_FIRST + FRAMES_COUNT - 1,
+# into build/frames/. Each is a separate deterministic run, so a result that
+# changes from frame to frame (flicker) can be pinned down and repeated.
+FRAMES_FIRST ?= 120
+FRAMES_COUNT ?= 20
+
+frames: $(OUT)
+	rm -rf $(OUTDIR)/frames && mkdir -p $(OUTDIR)/frames
+	for f in $$(seq $(FRAMES_FIRST) $$(($(FRAMES_FIRST) + $(FRAMES_COUNT) - 1))); do \
+		jnext --headless --silent --log-file $(OUTDIR)/jnext.log \
+			--rtc "$(SHOT_RTC)" \
+			--delayed-screenshot $(OUTDIR)/frames/$(CASE)-$$f.png \
+			--delayed-screenshot-frames $$f \
+			--delayed-automatic-exit-frames $$(($$f + 2)) \
+			$(OUT) > /dev/null || exit 1; \
+	done
+	@echo "wrote $(OUTDIR)/frames/$(CASE)-*.png"
+
 autoexec:
 	@printf '%s\n' \
 		'10 REM $(CASE)' \
@@ -104,4 +123,4 @@ clean:
 	rm -f cases/*/*.o cases/*/*.lis cases/*/*.map cases/*/*.sym
 	rm -rf $(OUTDIR)
 
-.PHONY: all list clean jnext shot mame autoexec sync
+.PHONY: all list clean jnext shot frames mame autoexec sync
